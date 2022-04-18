@@ -1,0 +1,347 @@
+#:set REAL_KINDS = ["sp", "dp"]
+#:set REAL_ABRVS = ["s", "d"]
+#:set REAL_TYPES = ["real({})".format(k) for k in REAL_KINDS]
+#!
+#:set CMPLX_KINDS = ["sp", "dp"]
+#:set CMPLX_ABRVS = ["c", "z"]
+#:set CMPLX_TYPES = ["complex({})".format(k) for k in CMPLX_KINDS]
+#!
+#:set RC_TYPES = REAL_TYPES + CMPLX_TYPES
+#:set RC_ABRVS = REAL_ABRVS + CMPLX_ABRVS
+#:set RC_TYPES_ABBRVS = list(zip(RC_TYPES,RC_ABRVS))
+#!
+module blas_sparse_proto
+
+   use blas_sparse_namedconstants, only: blas_conj_type, blas_trans_type
+   
+   implicit none
+   public
+
+   private :: blas_conj_type, blas_trans_type
+
+   integer, parameter, private :: sp = kind(1.0e0)
+   integer, parameter, private :: dp = kind(1.0d0)
+!
+! 3.8.2 LEVEL 1 COMPUTATIONAL ROUTINES
+!
+
+   !
+   ! usdot (sparse dot product)
+   !
+   interface usdot
+      #:for type, knd in RC_TYPES_ABBRVS
+      module function ${knd}$usdot( x, indx, y, conj ) result(r)
+         integer, intent(in) :: indx(:)
+         ${type}$, intent(in) :: x(:), y(:)
+         integer(blas_conj_type), intent(in), optional :: conj
+         ${type}$ :: r
+      end function ${knd}$usdot
+      #:endfor
+   end interface 
+
+   !
+   ! usaxpy (sparse vector update)
+   !
+   interface usaxpy
+      #:for type, knd in RC_TYPES_ABBRVS
+      module subroutine ${knd}$usaxpy( x, indx, y, alpha )
+         ${type}$, intent(in) :: x(:)
+         ${type}$, intent(inout) :: y(:)
+         integer, intent(in) :: indx(:)
+         ${type}$, intent(in), optional :: alpha
+      end subroutine ${knd}$usaxpy
+      #:endfor
+   end interface 
+
+   !
+   ! usga (sparse gather into compressed form)
+   !
+   interface usga
+      #:for type, knd in RC_TYPES_ABBRVS
+      module subroutine ${knd}$usga( y, x, indx )
+         ${type}$, intent(in) :: y(:)
+         ${type}$, intent(out) :: x(:)
+         integer, intent(in) :: indx(:)
+      end subroutine ${knd}$usga
+      #:endfor
+   end interface 
+
+   !
+   ! usgz (sparse gather and zero)
+   !
+   interface usgz
+      #:for type, knd in RC_TYPES_ABBRVS
+      module subroutine ${knd}$usgz( y, x, indx )
+         ${type}$, intent(in) :: y(:)
+         ${type}$, intent(out) :: x(:)
+         integer, intent(in) :: indx(:)
+      end subroutine ${knd}$usgz
+      #:endfor
+   end interface 
+
+   !
+   ! ussc (sparse scatter)
+   !
+   interface ussc
+      #:for type, knd in RC_TYPES_ABBRVS
+      module subroutine ${knd}$ussc( x, y, indx )
+         ${type}$, intent(in) :: x(:)
+         ${type}$, intent(inout) :: y(:)
+         integer, intent(in) :: indx(:)
+      end subroutine ${knd}$ussc
+      #:endfor
+   end interface 
+
+!
+! 3.8.3 LEVEL 2 COMPUTATIONAL ROUTINES
+!
+
+   !
+   ! usmv (sparse matrix/vector multiply)
+   !
+   interface usmv
+      #:for type, knd in RC_TYPES_ABBRVS
+      module subroutine ${knd}$usmv( a, x, y, istat, transa, alpha )
+         integer, intent(in) :: a
+         ${type}$, intent(in) :: x(:)
+         ${type}$, intent(inout) :: y(:)
+         integer, intent(out) :: istat
+         integer(blas_trans_type), intent(in), optional :: transa
+         ${type}$, intent(in), optional :: alpha
+      end subroutine ${knd}$usmv
+      #:endfor
+   end interface 
+
+   !
+   ! ussv (sparse triangular solve)
+   !
+   interface ussv
+      #:for type, knd in RC_TYPES_ABBRVS
+      module subroutine ${knd}$ussv( t, x, istat, transt, alpha )
+         integer, intent(in) :: t
+         ${type}$, intent(inout) :: x(:)
+         integer, intent(out) :: istat
+         integer(blas_trans_type), intent(in), optional :: transt
+         ${type}$, intent(in), optional :: alpha
+      end subroutine ${knd}$ussv
+      #:endfor
+   end interface 
+
+!
+! 3.8.4 LEVEL 3 COMPUTATIONAL ROUTINES
+!
+
+   !
+   ! usmm
+   !
+   interface usmm
+      #:for type, knd in RC_TYPES_ABBRVS
+      module subroutine ${knd}$usmm( a, b, c, istat, transa, alpha )
+         integer, intent(in) :: a
+         ${type}$, intent(in) :: b(:,:)
+         ${type}$, intent(inout) :: c(:,:)
+         integer, intent(out) :: istat
+         integer(blas_trans_type), intent(in), optional :: transa
+         ${type}$, intent(in), optional :: alpha
+      end subroutine ${knd}$usmm
+      #:endfor
+   end interface 
+
+   !
+   ! ussm
+   !
+   interface ussm
+      #:for type, knd in RC_TYPES_ABBRVS
+      module subroutine ${knd}$ussm( t, b, istat, transt, alpha )
+         integer, intent(in) :: t
+         ${type}$, intent(inout) :: b(:,:)
+         integer, intent(out) :: istat
+         integer(blas_trans_type), intent(in), optional :: transt
+         ${type}$, intent(in), optional :: alpha
+      end subroutine ${knd}$ussm
+      #:endfor
+   end interface 
+
+!
+! 3.8.6 CREATION ROUTINES
+!
+
+   !
+   ! uscr_begin
+   !
+   interface
+   #:for knd in RC_ABRVS
+   module subroutine ${knd}$uscr_begin( m, n, a, istat )
+      integer, intent(in) :: m, n
+      integer, intent(out) :: a, istat
+   end subroutine ${knd}$uscr_begin
+   #:endfor
+   end interface
+
+   !
+   ! uscr_block_begin
+   !
+   interface
+   #:for knd in RC_ABRVS
+   module subroutine ${knd}$uscr_block_begin( mb, nb, k, l, a, istat )
+      integer, intent(in) :: Mb, Nb, k, l
+      integer, intent(out) :: a, istat
+   end subroutine ${knd}$uscr_block_begin
+   #:endfor
+   end interface
+
+   !
+   ! uscr_variable_block_begin
+   !
+   interface
+   #:for knd in RC_ABRVS
+   module subroutine ${knd}$uscr_variable_block_begin( mb, nb, k, l, a, istat )
+      integer, intent(in) :: mb, nb, k, l
+      integer, intent(out) :: a, istat
+   end subroutine ${knd}$uscr_variable_block_begin
+   #:endfor
+   end interface
+
+!
+! 3.8.7 INSERTION ROUTINES
+!
+
+   !> uscr_insert_entry 
+   !! 
+   !! insert single value at coordinate (i,j)
+   !!
+   interface uscr_insert_entry
+   #:for type, knd in RC_TYPES_ABBRVS
+   module subroutine ${knd}$uscr_insert_entry( a, val, i, j, istat )
+      integer, intent(in) :: a, i, j
+      ${type}$, intent(in) :: val
+      integer, intent(out) :: istat
+   end subroutine ${knd}$uscr_insert_entry
+   #:endfor
+   end interface
+
+   !> uscr_insert_entries 
+   !!
+   !! insert a list of values in coordinate form (val,i,j)
+   !!
+   interface uscr_insert_entries
+   #:for type, knd in RC_TYPES_ABBRVS
+   module subroutine ${knd}$uscr_insert_entries( a, val, indx, jndx, istat )
+      integer, intent(in) :: a, indx(:), jndx(:)
+      ${type}$, intent(in) :: val(:)
+      integer, intent(out) :: istat
+   end subroutine ${knd}$uscr_insert_entries
+   #:endfor
+   end interface
+
+   !> uscr_insert_col 
+   !!
+   !! insert a compressed column
+   !!
+   interface uscr_insert_col
+   #:for type, knd in RC_TYPES_ABBRVS
+   module subroutine ${knd}$uscr_insert_col( a, j, val, indx, istat )
+      integer, intent(in) :: a, j, indx(:)
+      ${type}$, intent(in) :: val(:)
+      integer, intent(out) :: istat
+   end subroutine ${knd}$uscr_insert_col
+   #:endfor
+   end interface
+
+   !> uscr_insert_row
+   !!
+   !! insert a compressed row
+   !!
+   interface uscr_insert_row
+   #:for type, knd in RC_TYPES_ABBRVS
+   module subroutine ${knd}$uscr_insert_row( a, i, val, indx, istat )
+      integer, intent(in) :: a, i, indx(:)
+      ${type}$, intent(in) :: val(:)
+      integer, intent(out) :: istat
+   end subroutine ${knd}$uscr_insert_row
+   #:endfor
+   end interface
+
+   !> uscr_insert_clique
+   !!
+   !! insert a dense matrix clique
+   !!
+   interface uscr_insert_clique
+   #:for type, knd in RC_TYPES_ABBRVS
+   module subroutine ${knd}$uscr_insert_clique( a, val, indx, jndx, istat )
+      integer, intent(in) :: a, indx(:), jndx(:)
+      ${type}$, intent(in) :: val(:,:)
+      integer, intent(out) :: istat
+   end subroutine ${knd}$uscr_insert_clique
+   #:endfor
+   end interface
+
+   !> uscr_insert_block
+   !!
+   !! insert a block entry at block coordinate (bi, bj)
+   !!
+   interface uscr_insert_block
+   #:for type, knd in RC_TYPES_ABBRVS
+   module subroutine ${knd}$uscr_insert_block( a, val, bi, bj, istat )
+      integer, intent(in) :: a, bi, bj
+      ${type}$, intent(in) :: val(:,:)
+      integer, intent(out) :: istat
+   end subroutine ${knd}$uscr_insert_block
+   #:endfor
+   end interface
+
+!
+! 3.8.8 COMPLETION OF CONSTRUCTION ROUTINE
+!
+
+   !
+   ! uscr_end (entries completed; build valid matrix handle)
+   !
+   interface
+   module subroutine uscr_end( a, istat )
+      integer, intent(in) :: a
+      integer, intent(out) :: istat
+   end subroutine uscr_end
+   end interface
+
+!
+! 3.8.9 MATRIX PROPERTY ROUTINES
+!
+
+   !
+   ! usgp (get matrix property)
+   !
+   interface
+   module subroutine usgp( a, pname, m )
+      integer, intent(in) :: a
+      integer, intent(in) :: pname
+      integer, intent(out) :: m
+   end subroutine usgp
+   end interface
+
+   !
+   ! ussp (set matrix property)
+   !
+   interface
+   module subroutine ussp( a, pname, m )
+      integer, intent(inout) :: a
+      integer, intent(in) :: pname
+      integer, intent(out) :: m
+   end subroutine ussp
+   end interface
+
+!
+! 3.8.10 DESTRUCTION ROUTINE
+!
+
+   !
+   ! usds (release matrix handle)
+   !
+   interface
+   module subroutine usds( a, istat )
+      integer, intent(in) :: a
+      integer, intent(out) :: istat
+   end subroutine usds
+   end interface
+
+end module
